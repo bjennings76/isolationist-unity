@@ -14,5 +14,7 @@ namespace Plugins.Isolationist
 
 		public static void Hide() { if (Instance && Instance.HiddenObjects != null) Instance.HiddenObjects.ForEach(go => go.SetActive(false)); }
 		public static void Show() { if (Instance && Instance.HiddenObjects != null) Instance.HiddenObjects.ForEach(go => go.SetActive(true)); }
+
+		private void Awake() { Show(); }
 	}
 }
