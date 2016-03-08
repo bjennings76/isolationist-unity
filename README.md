@@ -5,7 +5,7 @@ Isolationist is a small Unity Editor utility that allows you to toggle selected 
 ##To Use
 - Install from the [Unity Asset Store](https://www.assetstore.unity3d.com/#!/content/57758) 
 - Or open this project in Unity
-- Or copy the `Assets/Plugins` folder into the `Assets/Plugins` folder in your own Unity project
+- Or copy the `Assets/Plugins` folder into the `Assets` folder in your own Unity project
 
 ##To Enter Isolate Mode
 - Select the object or objects you want to isolate
