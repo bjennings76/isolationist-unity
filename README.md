@@ -12,11 +12,11 @@ To Use:
 To Enter Isolate Mode:
 - Select the object or objects you want to isolate
 - Use `Tools Menu > Isolate Selected`
-- Or use the keyboard shortcut (`I` by default)
+- Or use the keyboard shortcut (<kbd>I</kbd> by default)
 
 To Exit Isolate Mode:
 - Use `Tools Menu > Isolate Selected`
-- Or use the keyboard shortcut (`I` by default)
+- Or use the keyboard shortcut (<kbd>I</kbd> by default)
 - Or select a hidden object in the heirarchy
 
 To Modify the Keyboard Shortcut:
