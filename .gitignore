@@ -38,4 +38,8 @@ Thumbs.db
 .vs/
 *.DotSettings
 /Assets/UnityVS*
-UnityVS.VersionSpecific.*
+/UnityVS.VersionSpecific.*
+
+# Asset Store Tools
+/Assets/AssetStoreTools.meta
+/Assets/AssetStoreTools/
