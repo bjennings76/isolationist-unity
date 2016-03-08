@@ -12,7 +12,7 @@ This makes the isolated objects easiser to work with and keeps you from accident
 ##To Enter Isolate Mode
 - Select the object or objects you want to isolate
 - Use the keyboard shortcut <kbd>I</kbd>
-- Use `Tools Menu > Isolate Selected`
+- Or use `Tools Menu > Isolate Selected`
 
 ##To Exit Isolate Mode
 - Select a hidden object in the heirarchy
