@@ -36,7 +36,6 @@ Thumbs.db
 
 # UnityVS
 .vs/
-*.DotSettings
 /Assets/UnityVS*
 /UnityVS.VersionSpecific.*
 
