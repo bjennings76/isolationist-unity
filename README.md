@@ -23,7 +23,7 @@ Isolationist is a small Unity Editor utility that allows you to toggle selected 
 ## Tips and Tricks
 
 ### Ctrl+Select to Add
-While in Isolate mode, use <kbd>Ctrl</kbd>+<kbd>Click</kbd> to add hidden objects to the isolation group.
+While in Isolate mode, use <kbd>Ctrl</kbd>+<kbd>Left Click</kbd> to add hidden objects in the hierarchy to the isolation group.
 
 ### Leave Isolate Before Building
 Isolate mode doesn't know when a build is about to start, so objects may get into the build in their 'hidden' state. They will be re-enabled as soon as the game starts (on `Awake()`), but this may not be fast enough for scripts that run even faster.
