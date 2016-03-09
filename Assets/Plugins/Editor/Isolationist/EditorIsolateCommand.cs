@@ -16,10 +16,11 @@ namespace Plugins.Isolationist.Editor
 		private static bool _alt;
 		private static bool _ctrl;
 		private static bool _shift;
-		private static bool _ctrlPressedInEditor;
+		private static bool _ctrlOrShiftPressed;
 		private static KeyCode _hotkey;
 		private static GameObject _lastSelection;
 		private static int _lastSelectionCount;
+		private static string _shortcutDisplay;
 		private static List<GameObject> _lastSelectionList;
 
 		static EditorIsolateCommand()
@@ -44,15 +45,13 @@ namespace Plugins.Isolationist.Editor
 			{
 				if (Event.current == null) return false;
 				if (Event.current.type != EventType.keyUp) return false;
-				return Event.current.keyCode == _hotkey && Event.current.alt == _alt && Event.current.control == _ctrl &&
-				       Event.current.shift == _shift;
+				return Event.current.keyCode == _hotkey && Event.current.alt == _alt && Event.current.control == _ctrl && Event.current.shift == _shift;
 			}
 		}
 
 		private static void Update()
 		{
-			if (!IsolateInfo.IsIsolated ||
-			    _lastSelection == Selection.activeGameObject && _lastSelectionCount == Selection.gameObjects.Length) return;
+			if (!IsolateInfo.IsIsolated || _lastSelection == Selection.activeGameObject && _lastSelectionCount == Selection.gameObjects.Length) return;
 			var selectionList = Selection.gameObjects.ToList();
 			var newItems = _lastSelectionList == null ? selectionList : selectionList.Except(_lastSelectionList).ToList();
 			_lastSelection = Selection.activeGameObject;
@@ -61,20 +60,17 @@ namespace Plugins.Isolationist.Editor
 			SelectionChanged(newItems);
 		}
 
-		private static void OnSceneGUI(SceneView sceneView)
-		{
-			OnGUI();
-		}
+		private static void OnSceneGUI(SceneView sceneView) { OnGUI(); }
 
 		private static void HierarchyWindowItemOnGUI(int instanceId, Rect selectionRect)
 		{
-			if (!string.IsNullOrEmpty(GUI.GetNameOfFocusedControl())) return;
+			if (!GUI.GetNameOfFocusedControl().IsNullOrEmpty()) return;
 			OnGUI();
 		}
 
 		private static void OnGUI()
 		{
-			_ctrlPressedInEditor = Event.current.control;
+			_ctrlOrShiftPressed = Event.current.control || Event.current.shift;
 			if (!IsolateKeyPressed) return;
 			ToggleIsolate();
 			Event.current.Use();
@@ -88,27 +84,21 @@ namespace Plugins.Isolationist.Editor
 
 		private static void SelectionChanged(List<GameObject> newItems)
 		{
-			if (WasHidden(Selection.activeTransform) && !_ctrlPressedInEditor)
+			if (WasHidden(Selection.activeTransform) && !_ctrlOrShiftPressed)
 			{
 				EndIsolation();
 				return;
 			}
 
-			if (!_ctrlPressedInEditor) return;
+			if (!_ctrlOrShiftPressed) return;
 
 			UpdateIsolation(newItems);
 		}
 
-		private static List<GameObject> GetAllGameObjectsToHide()
-		{
-			return IsolateInfo.Instance.FocusObjects.SelectMany<GameObject, GameObject>(GetGameObjectsToHide).Distinct().ToList();
-		}
+		private static List<GameObject> GetAllGameObjectsToHide() { return IsolateInfo.Instance.FocusObjects.SelectMany<GameObject, GameObject>(GetGameObjectsToHide).Distinct().ToList(); }
 
 		[MenuItem("Tools/Toggle Isolate", true), UsedImplicitly]
-		public static bool CanToggleIsolate()
-		{
-			return Selection.activeGameObject || IsolateInfo.IsIsolated;
-		}
+		public static bool CanToggleIsolate() { return Selection.activeGameObject || IsolateInfo.IsIsolated; }
 
 		[MenuItem("Tools/Toggle Isolate"), UsedImplicitly]
 		public static void ToggleIsolate()
@@ -121,13 +111,11 @@ namespace Plugins.Isolationist.Editor
 		{
 			if (IsolateInfo.Instance)
 			{
-				Debug.LogWarning(
-					"Isolationist: Found previous isolation info. This shouldn't happen. Ending the previous isolation anyway.");
+				Debug.LogWarning("Isolationist: Found previous isolation info. This shouldn't happen. Ending the previous isolation anyway.");
 				EndIsolation();
 			}
 
-			if (EditorApplication.isPlayingOrWillChangePlaymode)
-				Debug.LogWarning("Isolationist: Can't isolate while playing. It'll break stuff!");
+			if (EditorApplication.isPlayingOrWillChangePlaymode) Debug.LogWarning("Isolationist: Can't isolate while playing. It'll break stuff!");
 
 			// Create new IsolateInfo object.
 			var container = new GameObject("IsolationInfo") {hideFlags = HideFlags.HideInHierarchy};
@@ -160,24 +148,14 @@ namespace Plugins.Isolationist.Editor
 			IsolateInfo.Hide();
 		}
 
-		private static bool WasHidden(Transform t)
-		{
-			return t && !t.GetComponent<IsolateInfo>() && !IsolateInfo.Instance.FocusObjects.Any(t.gameObject.IsRelative);
-		}
+		private static bool WasHidden(Transform t) { return t && !t.GetComponent<IsolateInfo>() && !IsolateInfo.Instance.FocusObjects.Any(t.gameObject.IsRelative); }
 
-		private static bool CanUnhide(Transform t)
-		{
-			return WasHidden(t) || t.GetChildren().Any(CanUnhide);
-		}
-
-		private static bool CanHide(Transform t)
-		{
-			return t && t.gameObject.activeSelf && !t.GetComponent<IsolateInfo>() &&
-			       !IsolateInfo.Instance.FocusObjects.Any(t.gameObject.IsRelative);
-		}
+		private static bool CanHide(Transform t) { return t && t.gameObject.activeSelf && !t.GetComponent<IsolateInfo>() && !IsolateInfo.Instance.FocusObjects.Any(t.gameObject.IsRelative); }
 
 		private static IEnumerable<GameObject> GetGameObjectsToHide(GameObject keeperGo)
 		{
+			if (!keeperGo) return new List<GameObject>();
+
 			var keeper = keeperGo.transform;
 			var transformsToHide = new List<Transform>();
 
@@ -194,6 +172,7 @@ namespace Plugins.Isolationist.Editor
 		[PreferenceItem("Isolationist"), UsedImplicitly]
 		public static void PreferencesGUI()
 		{
+			GUILayout.Label("Shortcut: " + ShortcutDisplay);
 			_ctrl = EditorGUILayout.Toggle("Ctrl", _ctrl);
 			_alt = EditorGUILayout.Toggle("Alt", _alt);
 			_shift = EditorGUILayout.Toggle("Shift", _shift);
@@ -205,6 +184,7 @@ namespace Plugins.Isolationist.Editor
 			EditorPrefs.SetBool(ISOLATE_ALT_PREF, _alt);
 			EditorPrefs.SetBool(ISOLATE_SHIFT_PREF, _shift);
 			EditorPrefs.SetInt(ISOLATE_KEY_PREF, (int) _hotkey);
+			_shortcutDisplay = GetShortcutDisplay();
 		}
 
 		private static void EndIsolation()
@@ -220,6 +200,22 @@ namespace Plugins.Isolationist.Editor
 			Undo.DestroyObjectImmediate(IsolateInfo.Instance.gameObject);
 		}
 
+		public static string ShortcutDisplay 
+		{
+			get { return _shortcutDisplay.IsNullOrEmpty() ? _shortcutDisplay = GetShortcutDisplay() : _shortcutDisplay; }
+		}
+
+		private static string GetShortcutDisplay() 
+		{
+			string display = "";
+			if (_ctrl) { display += "Ctrl+"; }
+			if (_alt) { display += "Alt+"; }
+			if (_shift) { display += "Shift+"; }
+			display += _hotkey;
+			return display;
+		}
+
+
 		#region Utils
 
 		private static bool IsParent(this Transform parent, Transform transform)
@@ -233,15 +229,9 @@ namespace Plugins.Isolationist.Editor
 			return false;
 		}
 
-		private static bool IsParent(this GameObject parent, GameObject go)
-		{
-			return parent && go && IsParent(parent.transform, go.transform);
-		}
+		private static bool IsParent(this GameObject parent, GameObject go) { return parent && go && IsParent(parent.transform, go.transform); }
 
-		private static bool IsRelative(this GameObject go1, GameObject go2)
-		{
-			return go2.IsParent(go1) || go1.IsParent(go2);
-		}
+		private static bool IsRelative(this GameObject go1, GameObject go2) { return go2.IsParent(go1) || go1.IsParent(go2); }
 
 		private static IEnumerable<Transform> GetChildren(this Transform t)
 		{
@@ -257,10 +247,9 @@ namespace Plugins.Isolationist.Editor
 			while (prop.Next(expanded)) yield return prop.pptrValue as GameObject;
 		}
 
-		private static IEnumerable<Transform> GetRootTransforms()
-		{
-			return GetRootSceneObjects().Select(go => go.transform);
-		}
+		private static IEnumerable<Transform> GetRootTransforms() { return GetRootSceneObjects().Select(go => go.transform); }
+
+		private static bool IsNullOrEmpty(this string str) { return string.IsNullOrEmpty(str); }
 
 		#endregion
 	}
