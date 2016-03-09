@@ -233,7 +233,7 @@ GameObject:
   m_Component:
   - 4: {fileID: 458236}
   m_Layer: 0
-  m_Name: Example Prefab
+  m_Name: Example
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
