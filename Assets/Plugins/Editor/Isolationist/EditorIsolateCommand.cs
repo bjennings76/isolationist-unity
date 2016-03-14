@@ -115,7 +115,10 @@ namespace Plugins.Isolationist.Editor
 				EndIsolation();
 			}
 
-			if (EditorApplication.isPlayingOrWillChangePlaymode) Debug.LogWarning("Isolationist: Can't isolate while playing. It'll break stuff!");
+			if (EditorApplication.isPlayingOrWillChangePlaymode) {
+				Debug.LogWarning("Isolationist: Can't isolate while playing. It'll break stuff!");
+				return;
+			}
 
 			// Create new IsolateInfo object.
 			var container = new GameObject("IsolationInfo") {hideFlags = HideFlags.HideInHierarchy};
