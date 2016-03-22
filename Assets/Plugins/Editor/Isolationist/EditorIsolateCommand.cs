@@ -151,7 +151,7 @@ namespace Plugins.Isolationist.Editor
 			IsolateInfo.Hide();
 		}
 
-		private static bool WasHidden(Transform t) { return t && !t.GetComponent<IsolateInfo>() && !IsolateInfo.Instance.FocusObjects.Any(t.gameObject.IsRelative); }
+		private static bool WasHidden(Transform t) { return t && !t.gameObject.activeInHierarchy && !t.GetComponent<IsolateInfo>() && !IsolateInfo.Instance.FocusObjects.Any(t.gameObject.IsRelative); }
 
 		private static bool CanHide(Transform t) { return t && t.gameObject.activeSelf && !t.GetComponent<IsolateInfo>() && !IsolateInfo.Instance.FocusObjects.Any(t.gameObject.IsRelative); }
 
