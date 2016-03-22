@@ -4,6 +4,10 @@ using JetBrains.Annotations;
 using UnityEditor;
 using UnityEngine;
 
+#if UNITY_5_3_OR_NEWER
+using UnityEngine.SceneManagement;
+#endif
+
 namespace Plugins.Isolationist.Editor
 {
 	[InitializeOnLoad]
@@ -48,6 +52,8 @@ namespace Plugins.Isolationist.Editor
 				return Event.current.keyCode == _hotkey && Event.current.alt == _alt && Event.current.control == _ctrl && Event.current.shift == _shift;
 			}
 		}
+
+		public static string ShortcutDisplay { get { return _shortcutDisplay.IsNullOrEmpty() ? _shortcutDisplay = GetShortcutDisplay() : _shortcutDisplay; } }
 
 		private static void Update()
 		{
@@ -203,17 +209,12 @@ namespace Plugins.Isolationist.Editor
 			Undo.DestroyObjectImmediate(IsolateInfo.Instance.gameObject);
 		}
 
-		public static string ShortcutDisplay 
+		private static string GetShortcutDisplay()
 		{
-			get { return _shortcutDisplay.IsNullOrEmpty() ? _shortcutDisplay = GetShortcutDisplay() : _shortcutDisplay; }
-		}
-
-		private static string GetShortcutDisplay() 
-		{
-			string display = "";
-			if (_ctrl) { display += "Ctrl+"; }
-			if (_alt) { display += "Alt+"; }
-			if (_shift) { display += "Shift+"; }
+			var display = "";
+			if (_ctrl) display += "Ctrl+";
+			if (_alt) display += "Alt+";
+			if (_shift) display += "Shift+";
 			display += _hotkey;
 			return display;
 		}
@@ -245,12 +246,16 @@ namespace Plugins.Isolationist.Editor
 
 		private static IEnumerable<GameObject> GetRootSceneObjects()
 		{
+#if UNITY_5_3_OR_NEWER
+			return SceneManager.GetActiveScene().GetRootGameObjects();
+#else
 			var prop = new HierarchyProperty(HierarchyType.GameObjects);
 			var expanded = new int[0];
 			while (prop.Next(expanded)) yield return prop.pptrValue as GameObject;
+#endif
 		}
 
-		private static IEnumerable<Transform> GetRootTransforms() { return GetRootSceneObjects().Select(go => go.transform); }
+		private static IEnumerable<Transform> GetRootTransforms() { return GetRootSceneObjects().Where(go => go).Select(go => go.transform); }
 
 		private static bool IsNullOrEmpty(this string str) { return string.IsNullOrEmpty(str); }
 
