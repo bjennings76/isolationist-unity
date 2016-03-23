@@ -17,10 +17,14 @@ namespace Plugins.Isolationist.Editor
 		private const string ISOLATE_ALT_PREF = "IsolationistAlt";
 		private const string ISOLATE_CTRL_PREF = "IsolationistCtrl";
 		private const string ISOLATE_SHIFT_PREF = "IsolationistShift";
+		private const string ISOLATE_HIDE_LIGHTS_PREF = "IsolationistHideLights";
+		private const string ISOLATE_HIDE_CAMERAS_PREF = "IsolationistHideCameras";
 		private static bool _alt;
 		private static bool _ctrl;
 		private static bool _shift;
 		private static bool _ctrlOrShiftPressed;
+		private static bool _hideLights;
+		private static bool _hideCameras;
 		private static KeyCode _hotkey;
 		private static GameObject _lastSelection;
 		private static int _lastSelectionCount;
@@ -33,6 +37,8 @@ namespace Plugins.Isolationist.Editor
 			_ctrl = EditorPrefs.GetBool(ISOLATE_CTRL_PREF, false);
 			_shift = EditorPrefs.GetBool(ISOLATE_SHIFT_PREF, false);
 			_hotkey = (KeyCode) EditorPrefs.GetInt(ISOLATE_KEY_PREF, (int) KeyCode.I);
+			_hideLights = EditorPrefs.GetBool(ISOLATE_HIDE_LIGHTS_PREF, true);
+			_hideCameras = EditorPrefs.GetBool(ISOLATE_HIDE_CAMERAS_PREF, true);
 			EditorApplication.update -= Update;
 			EditorApplication.update += Update;
 			EditorApplication.playmodeStateChanged -= PlaymodeStateChanged;
@@ -159,7 +165,13 @@ namespace Plugins.Isolationist.Editor
 
 		private static bool WasHidden(Transform t) { return t && !t.gameObject.activeInHierarchy && !t.GetComponent<IsolateInfo>() && !IsolateInfo.Instance.FocusObjects.Any(t.gameObject.IsRelative); }
 
-		private static bool CanHide(Transform t) { return t && t.gameObject.activeSelf && !t.GetComponent<IsolateInfo>() && !IsolateInfo.Instance.FocusObjects.Any(t.gameObject.IsRelative); }
+		private static bool CanHide(Transform t)
+		{
+			if (!t) return false;
+			if (!_hideLights && t.GetComponentInChildren<Light>()) return false;
+			if (!_hideCameras && t.GetComponentInChildren<Camera>()) return false;
+			return t.gameObject.activeSelf && !t.GetComponent<IsolateInfo>() && !IsolateInfo.Instance.FocusObjects.Any(t.gameObject.IsRelative);
+		}
 
 		private static IEnumerable<GameObject> GetGameObjectsToHide(GameObject keeperGo)
 		{
@@ -187,11 +199,19 @@ namespace Plugins.Isolationist.Editor
 			_shift = EditorGUILayout.Toggle("Shift", _shift);
 			_hotkey = (KeyCode) EditorGUILayout.EnumPopup("Shortcut Key", _hotkey);
 
+			GUILayout.Label("");
+
+			_hideLights = EditorGUILayout.Toggle("Hide Lights", _hideLights);
+			_hideCameras = EditorGUILayout.Toggle("Hide Cameras", _hideCameras);
+
+
 			if (!GUI.changed) return;
 
 			EditorPrefs.SetBool(ISOLATE_CTRL_PREF, _ctrl);
 			EditorPrefs.SetBool(ISOLATE_ALT_PREF, _alt);
 			EditorPrefs.SetBool(ISOLATE_SHIFT_PREF, _shift);
+			EditorPrefs.SetBool(ISOLATE_HIDE_LIGHTS_PREF, _hideLights);
+			EditorPrefs.SetBool(ISOLATE_HIDE_CAMERAS_PREF, _hideCameras);
 			EditorPrefs.SetInt(ISOLATE_KEY_PREF, (int) _hotkey);
 			_shortcutDisplay = GetShortcutDisplay();
 		}
