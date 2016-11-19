@@ -1,8 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
-using JetBrains.Annotations;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 #if UNITY_5_3_OR_NEWER
 using UnityEngine.SceneManagement;
@@ -30,6 +31,16 @@ namespace Plugins.Isolationist.Editor
 		private static int _lastSelectionCount;
 		private static string _shortcutDisplay;
 		private static List<GameObject> _lastSelectionList;
+		private static readonly List<Type> _lightTypeList = new List<Type>();
+		private static readonly List<Type> _cameraTypeList = new List<Type>();
+
+		public static void AddLightType(Type type) {
+			_lightTypeList.Add(type);
+		}
+
+		public static void AddCameraType(Type type) {
+			_cameraTypeList.Add(type);
+		}
 
 		static EditorIsolateCommand()
 		{
@@ -39,14 +50,14 @@ namespace Plugins.Isolationist.Editor
 			_hotkey = (KeyCode) EditorPrefs.GetInt(ISOLATE_KEY_PREF, (int) KeyCode.I);
 			_hideLights = EditorPrefs.GetBool(ISOLATE_HIDE_LIGHTS_PREF, true);
 			_hideCameras = EditorPrefs.GetBool(ISOLATE_HIDE_CAMERAS_PREF, true);
-			EditorApplication.update -= Update;
 			EditorApplication.update += Update;
-			EditorApplication.playmodeStateChanged -= PlaymodeStateChanged;
 			EditorApplication.playmodeStateChanged += PlaymodeStateChanged;
-			EditorApplication.hierarchyWindowItemOnGUI -= HierarchyWindowItemOnGUI;
 			EditorApplication.hierarchyWindowItemOnGUI += HierarchyWindowItemOnGUI;
-			SceneView.onSceneGUIDelegate -= OnSceneGUI;
 			SceneView.onSceneGUIDelegate += OnSceneGUI;
+
+			AddCameraType(typeof(Camera));
+			AddLightType(typeof(Light));
+			AddLightType(typeof(ReflectionProbe));
 		}
 
 		private static bool IsolateKeyPressed
@@ -109,10 +120,10 @@ namespace Plugins.Isolationist.Editor
 
 		private static List<GameObject> GetAllGameObjectsToHide() { return IsolateInfo.Instance.FocusObjects.SelectMany<GameObject, GameObject>(GetGameObjectsToHide).Distinct().ToList(); }
 
-		[MenuItem("Tools/Toggle Isolate", true), UsedImplicitly]
+		[MenuItem("Tools/Toggle Isolate", true)]
 		public static bool CanToggleIsolate() { return Selection.activeGameObject || IsolateInfo.IsIsolated; }
 
-		[MenuItem("Tools/Toggle Isolate"), UsedImplicitly]
+		[MenuItem("Tools/Toggle Isolate")]
 		public static void ToggleIsolate()
 		{
 			if (IsolateInfo.IsIsolated) EndIsolation();
@@ -136,7 +147,12 @@ namespace Plugins.Isolationist.Editor
 			var container = new GameObject("IsolationInfo") {hideFlags = HideFlags.HideInHierarchy};
 			Undo.RegisterCreatedObjectUndo(container, "Isolate");
 			IsolateInfo.Instance = container.AddComponent<IsolateInfo>();
-			IsolateInfo.Instance.FocusObjects = Selection.gameObjects.ToList();
+			var focusList = IsolateInfo.Instance.FocusObjects = Selection.gameObjects.ToList();
+
+			if (!_hideLights) _lightTypeList.ForEach(t => focusList.AddRange(Object.FindObjectsOfType(t).Select<Object, GameObject>(ObjectToGO)));
+
+			if (!_hideCameras) _cameraTypeList.ForEach(t => focusList.AddRange(Object.FindObjectsOfType(t).Select<Object, GameObject>(ObjectToGO)));
+
 			IsolateInfo.Instance.HiddenObjects = GetAllGameObjectsToHide();
 
 			if (!IsolateInfo.Instance.HiddenObjects.Any())
@@ -148,6 +164,12 @@ namespace Plugins.Isolationist.Editor
 
 			Undo.RecordObjects(IsolateInfo.Instance.HiddenObjects.Cast<Object>().ToArray(), "Isolate");
 			IsolateInfo.Hide();
+		}
+
+		private static GameObject ObjectToGO(Object obj)
+		{
+			Component component = obj as Component;
+			return component ? component.gameObject : null;
 		}
 
 		private static void UpdateIsolation(List<GameObject> newItems)
@@ -167,10 +189,7 @@ namespace Plugins.Isolationist.Editor
 
 		private static bool CanHide(Transform t)
 		{
-			if (!t) return false;
-			if (!_hideLights && t.GetComponentInChildren<Light>()) return false;
-			if (!_hideCameras && t.GetComponentInChildren<Camera>()) return false;
-			return t.gameObject.activeSelf && !t.GetComponent<IsolateInfo>() && !IsolateInfo.Instance.FocusObjects.Any(t.gameObject.IsRelative);
+			return t && t.gameObject.activeSelf && !t.GetComponent<IsolateInfo>() && !IsolateInfo.Instance.FocusObjects.Any(t.gameObject.IsRelative);
 		}
 
 		private static IEnumerable<GameObject> GetGameObjectsToHide(GameObject keeperGo)
@@ -190,7 +209,7 @@ namespace Plugins.Isolationist.Editor
 			return transformsToHide.Select(t => t.gameObject);
 		}
 
-		[PreferenceItem("Isolationist"), UsedImplicitly]
+		[PreferenceItem("Isolationist")]
 		public static void PreferencesGUI()
 		{
 			GUILayout.Label("Shortcut: " + ShortcutDisplay);
