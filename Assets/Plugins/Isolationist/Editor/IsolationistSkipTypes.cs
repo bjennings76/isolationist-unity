@@ -1,13 +1,10 @@
 ﻿using UnityEditor;
 using UnityEngine;
 
-namespace Plugins.Isolationist.Editor
-{
+namespace Plugins.Isolationist.Editor {
 	[InitializeOnLoad]
-	public static class IsolationistSkipTypes
-	{
-		static IsolationistSkipTypes()
-		{
+	public static class IsolationistSkipTypes {
+		static IsolationistSkipTypes() {
 			// Add Cameras
 			EditorIsolateCommand.AddCameraType(typeof(Camera));
 
